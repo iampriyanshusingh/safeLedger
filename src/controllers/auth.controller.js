@@ -1,5 +1,7 @@
 const userModel = require("../models/user.model");
 
+const emailService = require("../services/email.service");
+
 /**
  * - user register controller
  * - POST /api/auth/register
@@ -29,6 +31,8 @@ async function userRegisterController(req, res) {
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
   res.status(201).json({ token, user });
+
+  await emailService.sendRegistrationEmail(user.email, user.name);
 }
 
 /**
@@ -51,9 +55,10 @@ async function userLoginController(req, res) {
     });
   }
 
-  const isMatch = user.comparePassword(password);
+  const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
+    emailService.sendSecurityAlertEmail(user.email, user.name);
     return res.status(401).json({
       message: "Password is INVALID",
     });
